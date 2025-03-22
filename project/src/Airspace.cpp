@@ -71,12 +71,6 @@ void checkSeparationViolations(const Airspace* airspace, double current_time_plu
                 double dz = future_pos1.z - future_pos2.z;
                 double horizontal_distance_sq = dx * dx + dy * dy;
                 double vertical_distance = std::fabs(dz);
-
-                // Check for separation violation
-                if (vertical_distance < 1000 && horizontal_distance_sq < (3000 * 3000)) {
-                    std::printf("Potential separation violation between Aircraft %u and Aircraft %u at time + %f seconds!\n", a1->id, a2->id, current_time_plus_n);
-                    // You would typically trigger an alarm or notification here
-                }
             }
         }
     }
