@@ -1,3 +1,5 @@
+// Adjust this file depending on your computer, the paths are not the same
+
 cmake_minimum_required(VERSION 3.26)
 project(ATC)
 
@@ -19,8 +21,11 @@ include_directories(${OPENGL_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${GLEW_INCLUDE_D
 set(glm_DIR "/usr/local/opt/glm/lib/cmake/glm")  # Add the path where glmConfig.cmake is located
 find_package(glm REQUIRED)
 
+# Find Assimp
+find_package(ASSIMP REQUIRED)
+
 # Add executable with all source files
 add_executable(ATC main.cpp Airspace.cpp Aircraft.cpp)
 
 # Link libraries
-target_link_libraries(ATC ${OPENGL_LIBRARIES} ${GLFW_LIBRARIES} ${GLEW_LIBRARY} ${glm_LIBRARIES})
+target_link_libraries(ATC ${OPENGL_LIBRARIES} ${GLFW_LIBRARIES} ${GLEW_LIBRARY} ${glm_LIBRARIES} ${ASSIMP_LIBRARIES})

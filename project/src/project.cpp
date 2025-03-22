@@ -1,60 +1,113 @@
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include <iostream>
 #include <vector>
 #include <cmath>
 
-#include "Airspace.h"
-#include "Aircraft.h"
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-// Vertex Data for a single point (position and color)
-GLfloat vertices[] = {
-        0.0f, 0.0f, 0.0f,  1.0f, 1.0f, 1.0f  
-};
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
-// Vertex Shader Code
+
+#include "Airspace.h"
+#include "Aircraft.h"
+
+void checkOpenGLError(const char* stmt, const char* fname, int line) {
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        std::cerr << "OpenGL error " << err << " at " << fname << ":" << line << " - for " << stmt << std::endl;
+    }
+}
+
+#define GL_CHECK(stmt) do { \
+        stmt; \
+        checkOpenGLError(#stmt, __FILE__, __LINE__); \
+    } while (0)
+
+// Vertex Shader Source (GLSL 330 core)
 const char* vertexShaderSource = R"(
     #version 330 core
-    layout (location = 0) in vec3 aPos;
-    layout (location = 1) in vec3 aColor;
-    out vec3 vertexColor;
+    in vec3 aPos;
     uniform mat4 model;
     uniform mat4 view;
     uniform mat4 projection;
     void main() {
         gl_Position = projection * view * model * vec4(aPos, 1.0);
-        vertexColor = aColor;
     }
 )";
 
-// Fragment Shader Code
+// Fragment Shader Source (GLSL 330 core)
 const char* fragmentShaderSource = R"(
     #version 330 core
-    in vec3 vertexColor;
     out vec4 FragColor;
     void main() {
-        FragColor = vec4(vertexColor, 1.0);
+        FragColor = vec4(1.0, 1.0, 1.0, 1.0); // White color
     }
 )";
 
-// Compile Shader Function
+// Function to compile shaders
 GLuint compileShader(GLenum type, const char* source) {
     GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &source, NULL);
-    glCompileShader(shader);
+    GL_CHECK(glShaderSource(shader, 1, &source, NULL));
+    GL_CHECK(glCompileShader(shader));
 
     GLint success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    GL_CHECK(glGetShaderiv(shader, GL_COMPILE_STATUS, &success));
     if (!success) {
         char infoLog[512];
-        glGetShaderInfoLog(shader, 512, NULL, infoLog);
+        GL_CHECK(glGetShaderInfoLog(shader, 512, NULL, infoLog));
         std::cerr << "Shader Compilation Failed:\n" << infoLog << std::endl;
     }
     return shader;
+}
+
+// Function to load a 3D model using Assimp
+void loadModel(const std::string& path, std::vector<GLfloat>& vertices, std::vector<GLuint>& indices) {
+    Assimp::Importer importer;
+    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+        std::cerr << "Error loading model: " << importer.GetErrorString() << std::endl;
+        return;
+    }
+
+    std::cout << "Model loaded successfully: " << path << std::endl;
+    std::cout << "Number of meshes: " << scene->mNumMeshes << std::endl;
+
+    // Process all meshes in the scene
+    for (unsigned int m = 0; m < scene->mNumMeshes; ++m) {
+        aiMesh* mesh = scene->mMeshes[m];
+        if (!mesh) {
+            std::cerr << "Error: Mesh is null." << std::endl;
+            continue;
+        }
+
+        std::cout << "Processing mesh " << m << ":" << std::endl;
+        std::cout << "  Number of vertices: " << mesh->mNumVertices << std::endl;
+        std::cout << "  Number of faces: " << mesh->mNumFaces << std::endl;
+
+        for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
+            vertices.push_back(mesh->mVertices[i].x);
+            vertices.push_back(mesh->mVertices[i].y);
+            vertices.push_back(mesh->mVertices[i].z);
+        }
+
+        for (unsigned int i = 0; i < mesh->mNumFaces; ++i) {
+            aiFace face = mesh->mFaces[i];
+            for (unsigned int j = 0; j < face.mNumIndices; ++j) {
+                indices.push_back(face.mIndices[j]);
+            }
+        }
+    }
+
+    if (vertices.empty() || indices.empty()) {
+        std::cerr << "Warning: No vertex or index data loaded from the model." << std::endl;
+    }
 }
 
 // Function to check if an aircraft is out of bounds
@@ -71,12 +124,16 @@ int main() {
         return -1;
     }
 
-    // OpenGL Version & Profile
+    // Request OpenGL 3.3 context (Core Profile)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    // Create a Window
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+    // Create a window
     GLFWwindow* window = glfwCreateWindow(800, 600, "3D Air Traffic Control", NULL, NULL);
     if (!window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
@@ -86,51 +143,82 @@ int main() {
     glfwMakeContextCurrent(window);
 
     // Initialize GLEW
+    glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
         std::cerr << "Failed to initialize GLEW" << std::endl;
         return -1;
     }
 
-    // Build and Compile Shaders
+    // Print OpenGL version
+    std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
+    std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+    
+    GL_CHECK(glEnable(GL_DEPTH_TEST));
+
+    // Load the 3D model
+    std::vector<GLfloat> airplaneVertices;
+    std::vector<GLuint> airplaneIndices;
+    std::string modelPath = "airplane.obj"; // Adjust this path depending on your computer. I had to put the entire path user/.../
+    std::cout << "Loading airplane model: " << modelPath << std::endl;
+    loadModel(modelPath, airplaneVertices, airplaneIndices);
+    
+    if (airplaneVertices.empty() || airplaneIndices.empty()) {
+        std::cerr << "Error: Failed to load airplane model." << std::endl;
+        glfwTerminate();
+        return -1;
+    } else {
+        std::cout << "Airplane model loaded. Number of vertices: " << airplaneVertices.size() / 3 << ", Number of indices: " << airplaneIndices.size() << std::endl;
+    }
+
+    // Create and compile shaders
     GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexShaderSource);
     GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
 
-    // Create Shader Program
+    // Create shader program
     GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    glUseProgram(shaderProgram);
+    GL_CHECK(glAttachShader(shaderProgram, vertexShader));
+    GL_CHECK(glAttachShader(shaderProgram, fragmentShader));
+    GL_CHECK(glLinkProgram(shaderProgram));
 
-    // Cleanup Shaders
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    GLint programSuccess;
+    GL_CHECK(glGetProgramiv(shaderProgram, GL_LINK_STATUS, &programSuccess));
+    if (!programSuccess) {
+        char infoLog[512];
+        GL_CHECK(glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog));
+        std::cerr << "Shader Program Linking Failed:\n" << infoLog << std::endl;
+        return -1;
+    }
 
-    // Create Vertex Array Object (VAO) and Vertex Buffer Object (VBO)
-    GLuint VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    GL_CHECK(glUseProgram(shaderProgram));
 
-    // Bind VAO
-    glBindVertexArray(VAO);
+    // Cleanup shaders
+    GL_CHECK(glDeleteShader(vertexShader));
+    GL_CHECK(glDeleteShader(fragmentShader));
 
-    // Bind and Fill VBO
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    
+    GLuint airplaneVAO, airplaneVBO, airplaneEBO;
+    GL_CHECK(glGenVertexArrays(1, &airplaneVAO));
+    GL_CHECK(glGenBuffers(1, &airplaneVBO));
+    GL_CHECK(glGenBuffers(1, &airplaneEBO));
 
-    // Position Attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+    GL_CHECK(glBindVertexArray(airplaneVAO));
 
-    // Color Attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, airplaneVBO));
+    GL_CHECK(glBufferData(GL_ARRAY_BUFFER, airplaneVertices.size() * sizeof(GLfloat), airplaneVertices.data(), GL_STATIC_DRAW));
 
-    // Enable Depth Testing
-    glEnable(GL_DEPTH_TEST);
+    GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, airplaneEBO));
+    GL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, airplaneIndices.size() * sizeof(GLuint), airplaneIndices.data(), GL_STATIC_DRAW));
+
+    // Position attribute
+    GL_CHECK(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0));
+    GL_CHECK(glEnableVertexAttribArray(0));
+
+    GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, 0));
+    GL_CHECK(glBindVertexArray(0));
+    GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
 
     // Create Airspace
-    Airspace* airspace = createAirspace(200.0, 200.0, 50.0, 10.0, 10); // Example dimensions
+    Airspace* airspace = createAirspace(200.0, 200.0, 50.0, 10.0, 10); 
 
     // Create some Aircraft
     Aircraft* aircraft1 = createAircraft(1, -10.0, 0.0, 15.0, 5.0, 0.0, 0.0, 0.0, 5.0, 5.0, 2.0);
@@ -146,8 +234,7 @@ int main() {
     GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
     GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
     GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-
-    // Projection matrix (perspective)
+    
     float fov = glm::radians(45.0f);
     float aspectRatio = 800.0f / 600.0f;
     float nearClip = 0.1f;
@@ -159,6 +246,9 @@ int main() {
     glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
     glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
+    
+    float vertical_offset = 0.0f; 
+    float initialRotationAngle = 90.0f; 
 
     // Render Loop
     double lastTime = glfwGetTime();
@@ -170,7 +260,6 @@ int main() {
         // Update aircraft positions
         const auto& aircraft_list = getAircraftInAirspace(airspace);
         for (Aircraft* aircraft : aircraft_list) {
-            // Stop aircraft if they go out of bounds
             if (!isAircraftOutOfBounds(aircraft, 200.0f, 200.0f, 50.0f)) {
                 updateAircraftPosition(aircraft, deltaTime);
             }
@@ -180,32 +269,39 @@ int main() {
         checkSeparationViolations(airspace, 5.0); // Check 5 seconds into the future
 
         // Clear Screen
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        GL_CHECK(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+        GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         // Set view and projection matrices
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        GL_CHECK(glUseProgram(shaderProgram));
+        GL_CHECK(glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view)));
+        GL_CHECK(glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection)));
 
-        // Draw each aircraft as a point
-        glUseProgram(shaderProgram);
-        glBindVertexArray(VAO);
-
-        // Set the point size (optional)
-        glPointSize(10.0f);
-
+// Draw each aircraft as the loaded 3D model
+        GL_CHECK(glBindVertexArray(airplaneVAO));
         for (Aircraft* aircraft : aircraft_list) {
-            // Transformation matrix (translation based on aircraft position)
-            glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3((float)aircraft->position.x, (float)aircraft->position.y, (float)aircraft->position.z));
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3((float)aircraft->position.x, (float)aircraft->position.y + vertical_offset, (float)aircraft->position.z));
+            
+            float currentRotationAngle = initialRotationAngle;
+            if (aircraft->id == 1) { 
+                currentRotationAngle += 180.0f; 
+            }
 
-            // Scale the model (make the planes bigger, you can adjust the scaling factor)
-            float scaleFactor = 3.0f; // Increase this value to make the planes bigger
+            if (aircraft->id == 3) { 
+                currentRotationAngle += 90.0f; 
+            }
+            model = glm::rotate(model, glm::radians(currentRotationAngle), glm::vec3(0.0f, 0.0f, 1.0f));
+
+            // Scale the model down to a reasonable size
+            float scaleFactor = 0.0005f; 
             model = glm::scale(model, glm::vec3(scaleFactor, scaleFactor, scaleFactor));
 
             // Apply the transformation
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            GL_CHECK(glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)));
 
-            glDrawArrays(GL_POINTS, 0, 1); // Draw a single point
+            GL_CHECK(glDrawElements(GL_TRIANGLES, airplaneIndices.size(), GL_UNSIGNED_INT, 0));
         }
+        GL_CHECK(glBindVertexArray(0));
 
         // Swap Buffers & Poll Events
         glfwSwapBuffers(window);
@@ -213,16 +309,17 @@ int main() {
     }
 
     // Cleanup
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
+    GL_CHECK(glDeleteVertexArrays(1, &airplaneVAO));
+    GL_CHECK(glDeleteBuffers(1, &airplaneVBO));
+    GL_CHECK(glDeleteBuffers(1, &airplaneEBO));
+    GL_CHECK(glDeleteProgram(shaderProgram));
     glfwDestroyWindow(window);
     glfwTerminate();
 
-    // Cleanup allocated memory
+   
     delete aircraft1;
     delete aircraft2;
     delete aircraft3;
-    delete airspace; // Assuming you'll implement a proper destructor or free function for Airspace
+    delete airspace; 
     return 0;
 }

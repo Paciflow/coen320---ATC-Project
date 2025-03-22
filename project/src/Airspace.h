@@ -8,17 +8,17 @@
 
 // Structure to represent the dimensions of the airspace
 struct AirspaceDimensions {
-    double length; // Along X-axis (100000 units)
-    double width;  // Along Y-axis (100000 units)
-    double height; // Along Z-axis (25000 units, from 15000ft above sea level, so maybe 15000 to 40000)
-    double min_altitude; // Minimum altitude of the airspace
+    double length; 
+    double width;  
+    double height; 
+    double min_altitude; 
 };
 
 // Structure to represent the airspace
 struct Airspace {
     AirspaceDimensions dimensions;
-    std::vector<Aircraft*> aircraft_list; // Use a vector for dynamic resizing
-    int capacity;             // Maximum number of aircraft the airspace can hold (optional with vector)
+    std::vector<Aircraft*> aircraft_list; 
+    int capacity;             
 };
 
 // Function to create a new airspace
@@ -36,4 +36,4 @@ const std::vector<Aircraft*>& getAircraftInAirspace(const Airspace* airspace);
 // Function to check for separation violations between aircraft in the airspace
 void checkSeparationViolations(const Airspace* airspace, double current_time_plus_n);
 
-#endif // AIRSPACE_H
+#endif 
