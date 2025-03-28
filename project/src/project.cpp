@@ -29,7 +29,7 @@ void checkOpenGLError(const char* stmt, const char* fname, int line) {
         checkOpenGLError(#stmt, __FILE__, __LINE__); \
     } while (0)
 
-// Vertex Shader Source (GLSL 330 core)
+// Vertex Shader Source
 const char* vertexShaderSource = R"(
     #version 330 core
     in vec3 aPos;
@@ -41,7 +41,7 @@ const char* vertexShaderSource = R"(
     }
 )";
 
-// Fragment Shader Source (GLSL 330 core)
+// Fragment Shader Source
 const char* fragmentShaderSource = R"(
     #version 330 core
     out vec4 FragColor;
@@ -152,16 +152,16 @@ int main() {
     // Print OpenGL version
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
     std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
-    
+
     GL_CHECK(glEnable(GL_DEPTH_TEST));
 
     // Load the 3D model
     std::vector<GLfloat> airplaneVertices;
     std::vector<GLuint> airplaneIndices;
-    std::string modelPath = "airplane.obj"; // Adjust this path depending on your computer. I had to put the entire path user/.../
+    std::string modelPath = "/Users/abou/Desktop/ATC/airplane.obj"; // Adjust this path as needed
     std::cout << "Loading airplane model: " << modelPath << std::endl;
     loadModel(modelPath, airplaneVertices, airplaneIndices);
-    
+
     if (airplaneVertices.empty() || airplaneIndices.empty()) {
         std::cerr << "Error: Failed to load airplane model." << std::endl;
         glfwTerminate();
@@ -195,7 +195,7 @@ int main() {
     GL_CHECK(glDeleteShader(vertexShader));
     GL_CHECK(glDeleteShader(fragmentShader));
 
-    
+
     GLuint airplaneVAO, airplaneVBO, airplaneEBO;
     GL_CHECK(glGenVertexArrays(1, &airplaneVAO));
     GL_CHECK(glGenBuffers(1, &airplaneVBO));
@@ -218,12 +218,12 @@ int main() {
     GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
 
     // Create Airspace
-    Airspace* airspace = createAirspace(200.0, 200.0, 50.0, 10.0, 10); 
+    Airspace* airspace = createAirspace(200.0, 200.0, 50.0, 10.0, 10);
 
     // Create some Aircraft
-    Aircraft* aircraft1 = createAircraft(1, -10.0, 0.0, 15.0, 5.0, 0.0, 0.0, 0.0, 5.0, 5.0, 2.0);
+    Aircraft* aircraft1 = createAircraft(1, -10.0, 0.0, -20.0, 15.0, 2.0, 0.0, 0.0, 5.0, 5.0, 2.0);
     Aircraft* aircraft2 = createAircraft(2, 10.0, 0.0, 20.0, -3.0, 0.0, 0.0, 0.0, 7.0, 6.0, 2.5);
-    Aircraft* aircraft3 = createAircraft(3, 0.0, 15.0, 25.0, 0.0, -4.0, 0.0, 0.0, 4.0, 4.0, 1.5);
+    Aircraft* aircraft3 = createAircraft(3, 0.0, 15.0, 25.0, 0.0, -8.0, 0.0, 20.0, 4.0, 4.0, 1.5);
 
     // Add aircraft to airspace
     addAircraftToAirspace(airspace, aircraft1);
@@ -234,7 +234,7 @@ int main() {
     GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
     GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
     GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-    
+
     float fov = glm::radians(45.0f);
     float aspectRatio = 800.0f / 600.0f;
     float nearClip = 0.1f;
@@ -242,13 +242,13 @@ int main() {
     glm::mat4 projection = glm::perspective(fov, aspectRatio, nearClip, farClip);
 
     // View matrix (camera position)
-    glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f, 30.0f);
+    glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f, 40.0f);
     glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
     glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
-    
-    float vertical_offset = 0.0f; 
-    float initialRotationAngle = 90.0f; 
+
+    float vertical_offset = 0.0f;
+    float initialRotationAngle = 90.0f;
 
     // Render Loop
     double lastTime = glfwGetTime();
@@ -281,19 +281,19 @@ int main() {
         GL_CHECK(glBindVertexArray(airplaneVAO));
         for (Aircraft* aircraft : aircraft_list) {
             glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3((float)aircraft->position.x, (float)aircraft->position.y + vertical_offset, (float)aircraft->position.z));
-            
+
             float currentRotationAngle = initialRotationAngle;
-            if (aircraft->id == 1) { 
-                currentRotationAngle += 180.0f; 
+            if (aircraft->id == 1) {
+                currentRotationAngle += 180.0f;
             }
 
-            if (aircraft->id == 3) { 
-                currentRotationAngle += 90.0f; 
+            if (aircraft->id == 3) {
+                currentRotationAngle += 90.0f;
             }
             model = glm::rotate(model, glm::radians(currentRotationAngle), glm::vec3(0.0f, 0.0f, 1.0f));
 
             // Scale the model down to a reasonable size
-            float scaleFactor = 0.0005f; 
+            float scaleFactor = 0.0005f;
             model = glm::scale(model, glm::vec3(scaleFactor, scaleFactor, scaleFactor));
 
             // Apply the transformation
@@ -316,10 +316,10 @@ int main() {
     glfwDestroyWindow(window);
     glfwTerminate();
 
-   
+
     delete aircraft1;
     delete aircraft2;
     delete aircraft3;
-    delete airspace; 
+    delete airspace;
     return 0;
 }
