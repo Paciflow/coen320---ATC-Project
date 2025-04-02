@@ -1,11 +1,11 @@
-#ifndef MESSAGES_H
+﻿#ifndef MESSAGES_H
 #define MESSAGES_H
 
 // Message Type IDs
 #define MSG_TYPE_ALERT 1
 #define MSG_TYPE_SET_N 2
 
-// Alert Message (from ComputerSystem -> Operator)
+// Alert Message (Computer → Operator)
 struct AlertMessage {
     unsigned int id1;
     unsigned int id2;
@@ -13,10 +13,15 @@ struct AlertMessage {
     char alert[100];
 };
 
-// Operator command (OperatorConsole -> ComputerSystem)
+// Control Message (Operator → Computer)
 struct ControlMessage {
-    int msg_type;   // Always MSG_TYPE_SET_N
-    int new_n;      // New prediction window value
+    int msg_type;
+    int new_n;
+};
+
+// Aircraft Command (Computer → Aircraft)
+struct AircraftCommand {
+    char command[100];
 };
 
 #endif

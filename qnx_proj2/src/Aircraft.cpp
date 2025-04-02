@@ -4,6 +4,11 @@
 #include <iostream>
 #include <chrono>
 #include <thread> // Ensure thread is included
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <cstring>
+
 
 // Thread function now takes a pointer to the AircraftThread struct
 void aircraftThreadFunction(AircraftThread* data) {

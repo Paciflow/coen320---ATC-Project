@@ -93,6 +93,34 @@ bool is_violation(const RadarData& a1, const RadarData& a2, int n) {
 
     return (vertical_distance(f1, f2) < 1000) && (horizontal_distance(f1, f2) < 3000);
 }
+void send(int aircraft_id, const std::string& command) {
+    // Build shared memory name e.g., "/plane_5"
+    std::string shm_name = "/plane_" + std::to_string(aircraft_id);
+
+    int shm_fd = shm_open(shm_name.c_str(), O_RDWR, 0666);
+    if (shm_fd == -1) {
+        std::cerr << "[ComputerSystem] Failed to open communication shm for aircraft " << aircraft_id << std::endl;
+        return;
+    }
+
+    AircraftCommand* cmd_ptr = (AircraftCommand*)mmap(NULL, sizeof(AircraftCommand), PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (cmd_ptr == MAP_FAILED) {
+        perror("mmap");
+        close(shm_fd);
+        return;
+    }
+
+    // Write command to shared memory
+    strncpy(cmd_ptr->command, command.c_str(), sizeof(cmd_ptr->command) - 1);
+    cmd_ptr->command[sizeof(cmd_ptr->command) - 1] = '\0'; // ensure null-termination
+
+    std::cout << "[ComputerSystem] Command sent to Aircraft " << aircraft_id << ": " << command << std::endl;
+    log_event("Command sent to Aircraft " + std::to_string(aircraft_id) + ": " + command);
+
+    // Cleanup
+    munmap(cmd_ptr, sizeof(AircraftCommand));
+    close(shm_fd);
+}
 
 void send_alert(const RadarData& a1, const RadarData& a2) {
     if (coid == -1) return;
