@@ -1,0 +1,40 @@
+# Ignore Visual Studio files
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build folders
+Debug/
+Release/
+build/
+out/
+*.obj
+*.o
+*.idb
+*.pdb
+*.ipch
+
+# OS generated
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# QNX specific
+# Ignore only build or generated files inside qnx_proj2
+qnx_proj2/build/
+qnx_proj2/*.map
+qnx_proj2/*.sym
+qnx_proj2/*.dump
+
+*.map
+*.sym
+*.dump
+
+# Compiler temp
+*.d
