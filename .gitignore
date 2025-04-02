@@ -1,0 +1,22 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build folders
+Debug/
+Release/
+*.obj
+*.o
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# QNX temp
+qnx_proj2/
+*.map
+*.sym
+*.dump
