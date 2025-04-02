@@ -1,4 +1,4 @@
-# Visual Studio
+# Ignore Visual Studio files
 .vs/
 *.suo
 *.user
@@ -8,15 +8,28 @@
 # Build folders
 Debug/
 Release/
+build/
+out/
 *.obj
 *.o
+*.idb
+*.pdb
+*.ipch
 
 # OS generated
 .DS_Store
 Thumbs.db
+ehthumbs.db
+desktop.ini
 
-# QNX temp
+# Logs
+*.log
+
+# QNX specific
 qnx_proj2/
 *.map
 *.sym
 *.dump
+
+# Compiler temp
+*.d
