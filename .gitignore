@@ -26,7 +26,12 @@ desktop.ini
 *.log
 
 # QNX specific
-qnx_proj2/
+# Ignore only build or generated files inside qnx_proj2
+qnx_proj2/build/
+qnx_proj2/*.map
+qnx_proj2/*.sym
+qnx_proj2/*.dump
+
 *.map
 *.sym
 *.dump

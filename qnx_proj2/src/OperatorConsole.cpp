@@ -1,43 +1,41 @@
 // OperatorConsole.cpp
 
 #include <iostream>
+#include <sys/dispatch.h>
 #include <cstring>
 #include <unistd.h>
-#include <sys/dispatch.h>
-
-struct AlertMessage {
-    unsigned int id1;
-    unsigned int id2;
-    int time_to_violation;
-    char alert[100];
-};
+#include "Messages.h"
 
 int main() {
-    name_attach_t* attach = name_attach(NULL, "operator_console", 0);
-    if (attach == NULL) {
-        perror("name_attach");
+    std::cout << "[OperatorConsole] Starting IPC...\n";
+
+    int coid = name_open("computer_system", 0);
+    if (coid == -1) {
+        perror("name_open failed");
         return 1;
     }
 
-    std::cout << "[Operator Console] Ready to receive alerts...\n";
+    std::cout << "[OperatorConsole] Connected to ComputerSystem.\n";
 
     while (true) {
-        AlertMessage msg;
-        int rcvid = MsgReceive(attach->chid, &msg, sizeof(msg), NULL);
+        std::cout << "Enter new prediction window n (seconds) or -1 to quit: ";
+        int input_n;
+        std::cin >> input_n;
 
-        if (rcvid == -1) {
-            perror("MsgReceive");
-            continue;
+        if (input_n == -1) break;
+
+        ControlMessage msg;
+        msg.msg_type = MSG_TYPE_SET_N;
+        msg.new_n = input_n;
+
+        if (MsgSend(coid, &msg, sizeof(msg), NULL, 0) == -1) {
+            perror("MsgSend failed");
         }
-
-        std::cout << "!! ALERT RECEIVED from Computer System !!\n";
-        std::cout << "Aircraft " << msg.id1 << " and Aircraft " << msg.id2
-            << " risk collision in <= " << msg.time_to_violation << " seconds\n";
-        std::cout << "Message: " << msg.alert << "\n";
-
-        MsgReply(rcvid, 0, NULL, 0);
+        else {
+            std::cout << "Sent new n = " << input_n << " to ComputerSystem.\n";
+        }
     }
 
-    name_detach(attach, 0);
+    name_close(coid);
     return 0;
 }

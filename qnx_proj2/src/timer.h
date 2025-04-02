@@ -1,25 +1,23 @@
-#ifndef TIMER_H_
-#define TIMER_H_
+// Timer.h
+
+#ifndef TIMER_H
+#define TIMER_H
 
 #include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/neutrino.h>
-#include <sys/siginfo.h>
 #include <time.h>
-#include <unistd.h>
+#include <sys/neutrino.h>
 
 class Timer {
 public:
-    Timer(int chid);                             // Constructor
-    int setTimer(int offset_us, int period_us);  // Set timer (in microseconds)
-    ~Timer();                                    // Destructor
+    Timer(int chid);
+    ~Timer();
+    int setTimer(int offset_us, int period_us);
 
 private:
-    timer_t timerid;             // Timer ID
-    struct sigevent event;       // Event (pulse)
-    struct itimerspec timer;     // Timer spec
-    int coid;                    // Self-connection ID for pulses
+    timer_t timerid;         // Timer ID
+    struct sigevent event;   // Event (pulse)
+    struct itimerspec timer; // Timer specification
+    int coid;                // Connection ID
 };
 
-#endif /* TIMER_H_ */
+#endif
