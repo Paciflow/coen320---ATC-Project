@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<trgtproject id="com.qnx.tools.ide.target.core.target">
+    <data>
+        <item id="com.qnx.tools.ide.target">
+            <project>
+                <name value="192.168.141.9"/>
+            </project>
+            <connection>
+                <HASVERSION value="1"/>
+                <VERSION value="2021/05/07-14:19:16EDT"/>
+                <RELEASE value="7.1.0"/>
+                <SYSNAME value="QNX"/>
+                <QCONN_VERSION value="1.4.207944"/>
+                <ENDIAN value="le"/>
+                <HW_PROVIDER value="Sony_UK"/>
+                <NUM_SRVCS value="1"/>
+                <ARCHITECTURE value="aarch64le"/>
+                <CPU value="aarch64le"/>
+                <HW_SERIAL value="10000000835d7480"/>
+                <HOSTNAME value="Pi4_Target1"/>
+                <OS value="nto"/>
+                <MACHINE value="RaspberryPi4B"/>
+            </connection>
+            <qconnport value="8000"/>
+            <qconnostype value="nto"/>
+            <qconnguid value="5c3ec7b7-37d8-4957-9818-50df008d48f9"/>
+            <qconnhostname value="192.168.141.9"/>
+            <targettmpdir value="/tmp"/>
+        </item>
+    </data>
+</trgtproject>
