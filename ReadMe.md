@@ -61,8 +61,10 @@ add_aircraft <id> <x> <y> <z> <vx> <vy> <vz> <lifetime>
 
 Developed independently by:
 
-- **Pacifique Uwamukiza**  
-  Computer Engineering Student, Concordia University  
+- **Pacifique Uwamukiza**
+- **Aboubacry Ba**
+- **Amira Toslim**
+  Computer Engineering Students, Concordia University  
   [GitHub: Paciflow](https://github.com/Paciflow)
 
 ## Status
